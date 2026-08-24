@@ -4,6 +4,7 @@ from vector_store import VectorStore
 from retriever import Retriever
 from generator import IntrospectiveGenerator
 from introspection import ModelIntrospector
+from injection_detector import IntrospectiveInjectionDetector
 
 
 class FlexibleRAGPipeline:
@@ -21,6 +22,7 @@ class FlexibleRAGPipeline:
         self.retriever = Retriever(vector_store=self.vector_store, top_k=top_k)
         self.generator = IntrospectiveGenerator(model_name=model_name)
         self.prompt_template = prompt_template or self.default_prompt_template
+        self.injection_detector = IntrospectiveInjectionDetector()
 
     @staticmethod
     def default_prompt_template(query: str, retrieved_docs: List[Document]) -> str:
@@ -49,6 +51,13 @@ class FlexibleRAGPipeline:
         # 4. Introspect hidden representations
         hidden_stats = ModelIntrospector.inspect_hidden_representations(gen_results["hidden_states"])
 
+        # 5. Evaluate Indirect Prompt Injection & Topic Transition Risk
+        injection_evaluation = self.injection_detector.evaluate_injection_risk(
+            attentions=gen_results["attentions"],
+            hidden_states=gen_results["hidden_states"],
+            input_tokens=gen_results["input_tokens"]
+        )
+
         return {
             "query": query_text,
             "retrieved_documents": retrieved_results,
@@ -57,5 +66,6 @@ class FlexibleRAGPipeline:
             "input_tokens": gen_results["input_tokens"],
             "attentions": gen_results["attentions"],
             "hidden_states": gen_results["hidden_states"],
-            "hidden_stats": hidden_stats
+            "hidden_stats": hidden_stats,
+            "injection_evaluation": injection_evaluation
         }

@@ -89,10 +89,14 @@ def interactive_chat():
             print("\n--- Model Response ---")
             print(last_result["answer"])
 
-            print("\n--- Introspection Summary ---")
+            print("\n--- Introspection & Safety Evaluation ---")
             h_stats = last_result["hidden_stats"]
-            print(f"Hidden State Layers: {h_stats['num_layers']} | Token Count: {len(last_result['input_tokens'])}")
-            print(f"Attention Layers: {len(last_result['attentions'])} (Layer 0 shape: {last_result['attentions'][0].shape})")
+            inj_eval = last_result["injection_evaluation"]
+            print(f"Hidden Layers: {h_stats['num_layers']} | Token Count: {len(last_result['input_tokens'])}")
+            print(f"Attention Layers: {len(last_result['attentions'])}")
+            print(f"Prompt Injection Risk Score: {inj_eval['risk_score']} | Status: {inj_eval['status']}")
+            print(f"  ├─ Stealth Prompt Risk  : {inj_eval['details']['stealth_prompt_risk']}")
+            print(f"  └─ Topic Transition Risk: {inj_eval['details']['topic_transition_risk']}")
             print("Tip: Run '/heatmap' to visualize attention weights for this query.")
 
 
